@@ -1,0 +1,12 @@
+{
+  "dependencies": {
+    "@azure/cognitiveservices-computervision": "^8.2.0",
+    "@azure/cognitiveservices-customvision-prediction": "^5.1.2",
+    "@azure/cognitiveservices-customvision-training": "^5.2.0",
+    "@azure/ms-rest-js": "^2.7.0",
+    "async": "^3.2.4",
+    "express": "^4.18.2",
+    "kafkajs": "^2.2.4",
+    "mysql": "^2.18.1"
+  }
+}

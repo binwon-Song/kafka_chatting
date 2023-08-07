@@ -1,13 +1,8 @@
-const express=require('express')
-const app=express()
-const port=3000
-const {Kafka} = require('kafkajs')
-
-
-const publicDirectoryPath = path.join(__dirname, '../public')
-
-app.use(express.static(publicDirectoryPath))
-
+const express=require('express');
+const app=express();
+const port=3000;
+const {Kafka} = require('kafkajs');
+const socketio=require('socket.io');
 
 
 
@@ -31,7 +26,7 @@ app.post('/events/:event',async(req,res)=>{
     res.send('event : '+req.params.event+'\n')
 })
 
-app.listen(port,async ()=>{
+server.listen(port,async ()=>{
     console.log(`kafca app listening on port ${port}`)
 })
 initKafka();

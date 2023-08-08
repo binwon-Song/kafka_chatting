@@ -1,5 +1,4 @@
 $(document).ready(function(){
-  
   // socket.io 서버에 접속한다
   var socket = io();
   const chat_form=$(".messages");
@@ -28,30 +27,36 @@ $(document).ready(function(){
     e.preventDefault();
     click_send();
   });
-
-  function makeRandomName(){
-    var name = "";
-    var possible = "abcdefghijklmnopqrstuvwxyz";
-    for( var i = 0; i < 3; i++ ) {
-      name += possible.charAt(Math.floor(Math.random() * possible.length));
-    }
-    
-    return name;
-  }
   
-  function click_send()
-  {
+  function click_send() {
     var $msgForm = $(".message_input");
-    // 서버로 메시지를 전송한다.
-    let msg_content=$msgForm.val();
-    socket.emit("chat", { msg: $msgForm.val() });
+    let msg_content = $msgForm.val();
+
+    $.ajax({
+        url: "/chat/send",
+        type: "POST",
+        data: JSON.stringify({ msg: msg_content }),
+        contentType: "application/json",
+        success: (result) => {
+            if (result.success) {
+                alert("Message sent successfully");
+            } else {
+                alert("Failed to send message. Please try again later.");
+            }
+        }
+        // error: (error) => {
+        //     console.error("Error sending message:", error);
+        //     alert("Failed to send message. Please try again later.");
+        // }
+    });
+
     $msgForm.val("");
-    
-    $(".messages").append("<div class='client_content content'>" + msg_content+"</div>");
+    $(".messages").append("<div class='client_content content'>" + msg_content + "</div>");
     $('.messages').scrollTop($('.messages').prop('scrollHeight'));
   }
   clickSend=click_send;
 });
+
 function js_click_send(){
   clickSend();
 }

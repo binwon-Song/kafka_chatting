@@ -1,62 +1,57 @@
-// (function() {
-//   var Message;
+$(document).ready(function(){
+  
+  // socket.io 서버에 접속한다
+  var socket = io();
+  const chat_form=$(".messages");
+  // 서버로 자신의 정보를 전송한다.
+  socket.emit("login", {
+    // name: "ungmo2",
+    name: localStorage.getItem('userName'),
+    userid: localStorage.getItem('userID')
+  });
+  
+  // 서버로부터의 메시지가 수신되면
+  socket.on("login", function(data) {
+    $(".messages").append("<div><strong>" + data + "</strong> has joined</div>");
+  });
 
-//   Message = function({
-//       text: text1,
-//       message_side: message_side1
-//     }) {
-//     this.text = text1;
-//     this.message_side = message_side1;
-//     this.draw = () => {
-//       var $message;
-//       $message = $($('.message_template').clone().html());
-//       $message.addClass(this.message_side).find('.text').html(this.text);
-//       $('.messages').append($message);
-//       return setTimeout(function() {
-//         return $message.addClass('appeared');
-//       }, 0);
-//     };
-//     return this;
-//   };
+  // 서버로부터의 메시지가 수신되면
+  socket.on("chat", function(data) {
+    console.log(data.msg);
+    console.log(data.from.name);
+    $(".messages").append("<div class='server_content content'>" + data.msg + " : from &nbsp;<strong>" + data.from.name + "</strong></div>");
+    
+  });
 
-//   $(function() {
-//     var getMessageText, message_side, sendMessage;
-//     message_side = 'right';
-//     getMessageText = function() {
-//       var $message_input;
-//       $message_input = $('.message_input');
-//       return $message_input.val();
-//     };
-//     sendMessage = function(text) {
-//       var $messages, message;
-//       if (text.trim() === '') {
-//         return;
-//       }
-//       $('.message_input').val('');
-//       $messages = $('.messages');
-//       message_side = message_side === 'left' ? 'right' : 'left';
-//       message = new Message({text, message_side});
-//       message.draw();
-//       return $messages.animate({
-//         scrollTop: $messages.prop('scrollHeight')
-//       }, 300);
-//     };
-//     $('.send_message').click(function(e) {
-//       return sendMessage(getMessageText());
-//     });
-//     $('.message_input').keyup(function(e) {
-//       if (e.which === 13) { // enter key
-//         return sendMessage(getMessageText());
-//       }
-//     });
-//     sendMessage('Hello Philip! :)');
-//     setTimeout(function() {
-//       return sendMessage('Hi Sandy! How are you?');
-//     }, 1000);
-//     return setTimeout(function() {
-//       return sendMessage('I\'m fine, thank you!');
-//     }, 2000);
-//   });
+  // Send 버튼이 클릭되면
+  $(".send_message").click(function(e) {
+    e.preventDefault();
+    click_send();
+  });
 
-// }).call(this);
-
+  function makeRandomName(){
+    var name = "";
+    var possible = "abcdefghijklmnopqrstuvwxyz";
+    for( var i = 0; i < 3; i++ ) {
+      name += possible.charAt(Math.floor(Math.random() * possible.length));
+    }
+    
+    return name;
+  }
+  
+  function click_send()
+  {
+    var $msgForm = $(".message_input");
+    // 서버로 메시지를 전송한다.
+    let msg_content=$msgForm.val();
+    socket.emit("chat", { msg: $msgForm.val() });
+    $msgForm.val("");
+    
+    $(".messages").append("<div class='client_content content'>" + msg_content+"</div>");
+    $('.messages').scrollTop($('.messages').prop('scrollHeight'));
+  }
+  clickSend=click_send;
+});
+function js_click_send(){
+  clickSend();
+}

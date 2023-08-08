@@ -12,7 +12,13 @@ const publicDirectoryPath = path.join(__dirname, '/public')
 
 app.use(express.static(publicDirectoryPath))
 
+app.get('/', function(req, res) {
+    res.sendFile(publicDirectoryPath+'/login.html');
+  });
 
+  app.get('/chat', function(req, res) {
+    res.sendFile(publicDirectoryPath+'/room.html');
+  });
 
 // connection event handler
 // connection이 수립되면 event handler function의 인자로 socket인 들어온다
@@ -33,7 +39,6 @@ io.on('connection', function(socket) {
     // 클라이언트로부터의 메시지가 수신되면
     socket.on('chat', function(data) {
       console.log('Message from %s: %s', socket.name, data.msg);
-  
       var msg = {
         from: {
           name: socket.name,
@@ -64,12 +69,6 @@ io.on('connection', function(socket) {
       console.log('user disconnected: ' + socket.name);
     });
   });
-  var nsp=io.of('/my-namespace');
-
-  nsp.on('connection',(socket)=>{
-    console.log('someone connected');
-  });
-
 server.listen(port,async ()=>{
     console.log(`Chatting server is open on ${port}`)
 })

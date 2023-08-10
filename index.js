@@ -26,12 +26,15 @@ const initKafka=async()=>{
 }
 
 async function initConsumer() {
+  console.log("#### Initial Consumer ####");
+  
   try {
     await consumer.connect();
     await consumer.subscribe({
       topic: 'chat-server',
       fromBeginning: true
     });
+    
     await consumer.run({
       eachMessage: async ({ topic, partition, message }) => {
         const messageValue = message.value.toString();
@@ -49,7 +52,7 @@ async function initConsumer() {
         });
 
         console.log({
-          // name:message.user,
+          name:messageFrom,
           value: messageValue,
         });
       },
@@ -59,8 +62,9 @@ async function initConsumer() {
     console.log("Message Failed to Subscribe", error);
   }
 }
-initConsumer();
 
+
+initConsumer();
 
 
 app.get('/', function(req, res) {
@@ -68,7 +72,8 @@ app.get('/', function(req, res) {
   });
 
 app.get('/chat', async (req, res) => {
-  res.sendFile(publicDirectoryPath + '/room.html');
+  consumer.seek({ topic: 'chat-server', partition: 0, offset: 0 })
+  res.sendFile(publicDirectoryPath + '/room.html',);
 });
 
 // 채팅을 했을 떄 producer로 값을 보냄
@@ -112,27 +117,27 @@ io.on('connection', function(socket) {
     });
   
     // 클라이언트로부터의 메시지가 수신되면
-    socket.on('chat', function(data) {
-      console.log('Message from %s: %s', socket.name, data.msg);
-      var msg = {
-        from: {
-          name: socket.name,
-        },
-        msg: data.msg
-      };
+    // socket.on('chat', function(data) {
+    //   console.log('Message from %s: %s', socket.name, data.msg);
+    //   var msg = {
+    //     from: {
+    //       name: socket.name,
+    //     },
+    //     msg: data.msg
+    //   };
   
-      // 메시지를 전송한 클라이언트를 제외한 모든 클라이언트에게 메시지를 전송한다
-      socket.broadcast.emit('chat', msg);
+    //   // 메시지를 전송한 클라이언트를 제외한 모든 클라이언트에게 메시지를 전송한다
+    //   socket.broadcast.emit('chat', msg);
   
-      // 메시지를 전송한 클라이언트에게만 메시지를 전송한다
-      // socket.emit('s2c chat', msg);
+    //   // 메시지를 전송한 클라이언트에게만 메시지를 전송한다
+    //   // socket.emit('s2c chat', msg);
   
-      // 접속된 모든 클라이언트에게 메시지를 전송한다
-      // io.emit('s2c chat', msg);
+    //   // 접속된 모든 클라이언트에게 메시지를 전송한다
+    //   // io.emit('s2c chat', msg);
   
-      // 특정 클라이언트에게만 메시지를 전송한다
-      // io.to(id).emit('s2c chat', data);
-    });
+    //   // 특정 클라이언트에게만 메시지를 전송한다
+    //   // io.to(id).emit('s2c chat', data);
+    // });
   
     // force client disconnect from server
     socket.on('forceDisconnect', function() {

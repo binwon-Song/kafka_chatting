@@ -10,6 +10,8 @@ const port=3000;
 
 
 const publicDirectoryPath = path.join(__dirname, '/public')
+app.use(express.static(publicDirectoryPath))
+app.use(bodyParser.json());
 
 const kafka=new Kafka({
   clientId:'my-app',
@@ -19,45 +21,54 @@ const producer=kafka.producer()
 const consumer=kafka.consumer(
   {groupId:"chat-group"}
 )
-// const initKafka=async()=>{
-//   await producer.connect()
-// }
+const initKafka=async()=>{
+  await producer.connect()
+}
 
+async function initConsumer() {
+  try {
+    await consumer.connect();
+    await consumer.subscribe({
+      topic: 'chat-server',
+      fromBeginning: true
+    });
+    await consumer.run({
+      eachMessage: async ({ topic, partition, message }) => {
+        const messageValue = message.value.toString();
+        const parsedMessage = JSON.parse(messageValue);
+        const messageFrom = parsedMessage.fromUser;
+        const messageContent = parsedMessage.msg;
+        console.log('Received message from %s: %s', messageFrom, messageContent); 
+        
+        // 각 메시지를 받을 때 socket.on('chat') 부분을 실행
+        io.emit('chat', {
+          from: {
+            name: messageFrom, 
+          },
+          msg: messageValue
+        });
 
-// producer.on('error', (error) => {
-//   console.error('Error connecting to Kafka:', error);
-// });
+        console.log({
+          // name:message.user,
+          value: messageValue,
+        });
+      },
+    });
+  }
+  catch (error) {
+    console.log("Message Failed to Subscribe", error);
+  }
+}
+initConsumer();
 
-app.use(express.static(publicDirectoryPath))
-app.use(bodyParser.json());
 
 
 app.get('/', function(req, res) {
     res.sendFile(publicDirectoryPath+'/login.html');
   });
 
-app.get('/chat', async(req, res)=>{
-  try{
-    await producer.connect();
-    await consumer.subscribe({
-      topic:'chat-server',
-      fromBeginning:true
-    })
-    await consumer.run({
-      eachMessage: async ({ topic, partition, message }) => {
-        console.log({
-          
-          value: message.value.toString(),
-        })
-      },
-    })
-  }
-  catch(error)
-  {
-    console.log("Message Failed to Subscribe",error);
-    res.status(500).send({success:false})
-  }
-  res.sendFile(publicDirectoryPath+'/room.html');
+app.get('/chat', async (req, res) => {
+  res.sendFile(publicDirectoryPath + '/room.html');
 });
 
 // 채팅을 했을 떄 producer로 값을 보냄
@@ -65,12 +76,13 @@ app.post('/chat/send', async (req, res) => {
   try {
     await producer.connect();
     const msg_content = req.body.msg;
-
+    const user = req.body.user;
+    // console.log("user : " + user)
     const payload = {
-      topic: 'chat-server',
-      messages: [{ value: msg_content }]
+      topic: "chat-server",
+      messages: [{ value: JSON.stringify({ msg: msg_content, fromUser: user }) }],
     };
-
+    // console.log("payload : " + payload.messages[0].fromUser) // 배열의 첫 번째 요소의 fromUser 접근
     const result = await producer.send(payload);
     console.log('Message successfully published:', result);
     await producer.disconnect();
@@ -81,6 +93,7 @@ app.post('/chat/send', async (req, res) => {
     res.status(500).send({ success: false });
   }
 });
+
 
 // connection event handler
 // connection이 수립되면 event handler function의 인자로 socket인 들어온다
@@ -104,7 +117,6 @@ io.on('connection', function(socket) {
       var msg = {
         from: {
           name: socket.name,
-          userid: socket.userid
         },
         msg: data.msg
       };
